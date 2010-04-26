@@ -6,26 +6,41 @@ import tfl.table
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print "Usage: pytfl orig_postcode dest_postcode."
+        print "Usage: pytfl orig_postcode dest_postcode [route]"
         sys.exit(1)
 
+    individual=False
+    route=0
+    if len(sys.argv) == 4:
+        individual = True
+        route=int(sys.argv[3])
+
     try:
-        routes = tfl.get_journeys(sys.argv[1], sys.argv[2])
+        routes = tfl.get_journeys(sys.argv[1], sys.argv[2], route=route)
     except(tfl.PostCodeError):
         print "Error: Invalid Postcode specified."
         sys.exit(1)
 
-        print route['depart'], route['arrive'], route['duration']
-        labels = ('Deppart', 'Arrival', 'Duration')   
-        print routes
+    if individual:
+        labels = ('Type',  'Start', 'Arrive', 'From', 'Description')   
+        rows=[]
+        for route in routes:
+            print "Route Type:", route['route_type']
+            print "Time start:", route['time_start']
+            print "Time End:", route['time_end']
+            print "From:", route['from']
+            print "Description:", route['description']
 
-    labels = ('Route',  'Depart', 'Arrivex', 'Duration')   
-    rows=[]
-    count=1
-    for row in routes:
-        if '00:' in row['duration']:
-            duration = row['duration' ].replace('00:', '')
-        rows.append([ count, row['depart'], row['arrive'], duration + " mn" ])
-        count += 1
-    print tfl.table.indent([labels]+rows, hasHeader=True)
-        
+            print 
+            
+    else:
+        labels = ('Route',  'Depart', 'Arrivex', 'Duration')   
+        rows=[]
+        count=1
+        for row in routes:
+            if '00:' in row['duration']:
+                duration = row['duration' ].replace('00:', '')
+            rows.append([ count, row['depart'], row['arrive'], duration + " mn" ])
+            count += 1
+        print tfl.table.indent([labels]+rows, hasHeader=True)
+
