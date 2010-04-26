@@ -22,31 +22,48 @@ def descape(string):
     return html_entitity_pattern.sub(descape_entity, string)
 
 def get_route(html):
+    # f = open("/tmp/a.html", 'w')
+    # f.write(html.read())
+    # f.close
+    # sys.exit()
     soup = BeautifulStoneSoup(html)
     re_time=re.compile('^<td class="(start|interchange)">([^\<]+)<br>.*alt="([^"]*?)" hspace="\d+"></img><br></br>(\d+:\d+)')
     re_description=re.compile('^<td>([^<]+)<br><\/br>(.*)<br></br>(<br></br>)?.*')
     re_duration=re.compile('^\<td class="jpinformation" width="90"><ul><li>(Transfer|Average journey) time: (\d+)')
-
+    re_uk_postcode=re.compile('^([A-PR-UWYZ0-9][A-HK-Y0-9][AEHMNPRTVXY0-9]?[ABEHMNPRVWXY0-9]? {1,2}[0-9][ABD-HJLN-UW-Z]{2}|GIR 0AA)$')
+    
     def fix_html(value):
         ret = re.sub(r'<[^>]*?>', ' ', value)
         ret = ret.replace(' ', '')
         return descape(re.sub(r'\s{2,}', ' ', ret))
 
     ret=[]
+    end_description=None
     for tr in soup.find('table').findAll('tr'):
         if not tr.td:
             continue
-
         dico={}
         tds = tr.findAll('td')
         if len(tds)  < 4:
             raise PostCodeError
-        s_time = str(tds[0]).replace('\n', '')
-        description = str(tds[1]).replace('\n', ' ')
-        duration = str(tds[2]).replace('\n', '')
+        s_time = str(tds[0]).replace('\n', '').strip()
+        description = str(tds[1]).replace('\n', ' ').strip()
+        duration = str(tds[2]).replace('\n', '').strip()
 
+        _d = fix_html(description).strip()
+        if re_uk_postcode.match(_d):
+            pass
+        else:
+            end_description = fix_html(description)
+            
+        #print s_time
         match_time = re_time.match(s_time)
-        if match_time:
+        if 'class="end"' in s_time:
+            dico['time_end'] = s_time.replace('<td class="end">', '').replace("</td>", "")
+            dico['description'] = end_description
+            ret.append(dico)
+            continue
+        elif match_time:
             d = match_time.group(2)
             end_time =  match_time.group(4)
             if d == ' ':
@@ -59,8 +76,6 @@ def get_route(html):
             if route_type == 'Walk':
                 route_type = 'Walking'
             dico['route_type'] = route_type
-        elif 'class="end"' in s_time:
-            dico['time_end'] = s_time.replace('<td class="end">', '').replace("</td>", "")
         else:
             continue
 
@@ -93,7 +108,6 @@ def get_journeys(z_origin, z_destination, route=0):
     urlhandle = urllib2.urlopen(req)
     cookie = urlhandle.headers['Set-Cookie']
     results=[]
-    returnres=[]
 
     route_cnt = 1
     for line in urlhandle:
