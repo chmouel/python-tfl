@@ -1,0 +1,31 @@
+#!/usr/bin/python2.6
+# -*- Mode: python -*-
+import sys
+import tfl
+import tfl.table
+
+if __name__ == '__main__':
+    if len(sys.argv) < 3:
+        print "Usage: pytfl orig_postcode dest_postcode."
+        sys.exit(1)
+
+    try:
+        routes = tfl.get_journeys(sys.argv[1], sys.argv[2])
+    except(tfl.PostCodeError):
+        print "Error: Invalid Postcode specified."
+        sys.exit(1)
+
+        print route['depart'], route['arrive'], route['duration']
+        labels = ('Deppart', 'Arrival', 'Duration')   
+        print routes
+
+    labels = ('Route',  'Depart', 'Arrivex', 'Duration')   
+    rows=[]
+    count=1
+    for row in routes:
+        if '00:' in row['duration']:
+            duration = row['duration' ].replace('00:', '')
+        rows.append([ count, row['depart'], row['arrive'], duration + " mn" ])
+        count += 1
+    print tfl.table.indent([labels]+rows, hasHeader=True)
+        
