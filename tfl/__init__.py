@@ -102,11 +102,12 @@ def get_route(html):
         
 #TODO: with time
 def get_journeys(z_origin, z_destination, route=0):
-    regex = re.compile('.*</td><td class="depart">(?P<depart>[^<]*)</td><td class="arrive">(?P<arrive>[^<]*)</td><td class="duration">(?P<duration>[^<]*)</td>.*<a href="(?P<url>XSLT*[^"]*).*')
+    regex = re.compile('.*</td><td class="depart">(?P<depart>[^<]*)</td><td class="arrive">(?P<arrive>[^<]*)</td><td class="duration">(?P<duration>[^<]*)</td>.*?<a href="(?P<url>XSLT*[^"]*).*')
     url="http://journeyplanner.tfl.gov.uk/user/XSLT_TRIP_REQUEST2?language=en&sessionID=0&type_destination=locator&name_destination=%(destination)s&type_origin=locator&name_origin=%(origin)s&place_origin=London&place_destination=London"
     req = urllib2.Request(url % ({ "origin" : z_origin.replace(" ", ""), "destination" : z_destination.replace(" ", "") }))
     urlhandle = urllib2.urlopen(req)
     cookie = urlhandle.headers['Set-Cookie']
+    # urlhandle = open("/tmp/x.html", 'r')
     results=[]
 
     route_cnt = 1
@@ -146,7 +147,7 @@ def get_journeys(z_origin, z_destination, route=0):
 
 if __name__ == '__main__':
     origin_zipcode = "W13 8PH"
-    destination_zipcode = "N5 1AB"
+    destination_zipcode = "UB 111ET"
     results = get_journeys(origin_zipcode, destination_zipcode)
     # html = open("/tmp/a.html", 'r')
     # results = get_route(html)

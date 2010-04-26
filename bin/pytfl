@@ -25,22 +25,28 @@ if __name__ == '__main__':
         labels = ('Type',  'Start', 'Arrive', 'From', 'Description')   
         rows=[]
         for route in routes:
-            print "Route Type:", route['route_type']
-            print "Time start:", route['time_start']
-            print "Time End:", route['time_end']
-            print "From:", route['from']
-            print "Description:", route['description']
-
-            print 
-            
+            if len(route) > 2:
+                print "Route Type:", route['route_type']
+                print "Time start:", route['time_start']
+                print "Time End:", route['time_end']
+                print "From:", route['from']
+                print "Description:", route['description']
+                print
+            elif len(route) == 2:
+                print "Route Type: End"
+                print "Time End:", route['time_end']
+                print "Description:", route['description']
+                
     else:
         labels = ('Route',  'Depart', 'Arrivex', 'Duration')   
         rows=[]
         count=1
         for row in routes:
             if '00:' in row['duration']:
-                duration = row['duration' ].replace('00:', '')
-            rows.append([ count, row['depart'], row['arrive'], duration + " mn" ])
+                duration = row['duration' ].replace('00:', '') + " mn"
+            else:
+                duration = row['duration']
+            rows.append([ count, row['depart'], row['arrive'], duration ])
             count += 1
         print tfl.table.indent([labels]+rows, hasHeader=True)
 
