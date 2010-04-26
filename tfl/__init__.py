@@ -8,6 +8,8 @@ import htmlentitydefs
 
 from BeautifulSoup import BeautifulStoneSoup
 
+class PostCodeError(Exception): pass
+
 def descape_entity(m, defs=htmlentitydefs.entitydefs):
     try:
         return defs[m.group(1)]
@@ -18,7 +20,7 @@ def descape(string):
     html_entitity_pattern = re.compile("&(\w+?);")
     return html_entitity_pattern.sub(descape_entity, string)
 
-def trajet(html):
+def route(html):
     soup = BeautifulStoneSoup(html)
     re_time=re.compile('^<td class="(start|interchange)">([^\<]+)<br>.*alt="([^"]*?)" hspace="\d+"></img><br></br>(\d+:\d+)')
     re_description=re.compile('^<td>([^<]+)<br><\/br>(.*)<br></br>(<br></br>)?.*')
@@ -36,6 +38,8 @@ def trajet(html):
 
         dico={}
         tds = tr.findAll('td')
+        if len(tds)  < 4:
+            raise PostCodeError
         s_time = str(tds[0]).replace('\n', '')
         description = str(tds[1]).replace('\n', ' ')
         duration = str(tds[2]).replace('\n', '')
@@ -50,7 +54,7 @@ def trajet(html):
                 end_time = None
             dico['time_start'] =  d
             dico['time_end'] =  end_time
-            dico['trajet_type'] = match_time.group(3)
+            dico['route_type'] = match_time.group(3)
         elif 'class="end"' in s_time:
             dico['time_end'] = s_time.replace('<td class="end">', '').replace("</td>", "")
         else:
@@ -78,7 +82,7 @@ def trajet(html):
     return ret
         
 #TODO: with time
-def get_journeys(z_origin, z_destination):
+def get_journeys(z_origin, z_destination, routes=0):
     regex = re.compile('.*</td><td class="depart">(?P<depart>[^<]*)</td><td class="arrive">(?P<arrive>[^<]*)</td><td class="duration">(?P<duration>[^<]*)</td>.*<a href="(?P<url>XSLT*[^"]*).*')
     url="http://journeyplanner.tfl.gov.uk/user/XSLT_TRIP_REQUEST2?language=en&sessionID=0&type_destination=locator&name_destination=%(destination)s&type_origin=locator&name_origin=%(origin)s&place_origin=London&place_destination=London"
     req = urllib2.Request(url % ({ "origin" : z_origin.replace(" ", ""), "destination" : z_destination.replace(" ", "") }))
@@ -101,12 +105,15 @@ def get_journeys(z_origin, z_destination):
                         })
     urlhandle.close()
 
+    if routes == 0:
+        return results
+    
     for res in results:
         url = "http://journeyplanner.tfl.gov.uk/user/%s" % (res['url'].replace('&amp;', '&'))
         req = urllib2.Request(url)
         req.add_header('Set-Cookie', cookie)
         r = urllib2.urlopen(req)
-        ans = trajet(r)
+        ans = route(r)
         if ans:
             returnres.append(ans)
     return returnres
@@ -116,6 +123,6 @@ if __name__ == '__main__':
     destination_zipcode = "N5 1AB"
     results = get_journeys(origin_zipcode, destination_zipcode)
     # html = open("/tmp/a.html", 'r')
-    # results = trajet(html)
+    # results = route(html)
     from pprint import pprint as p
     p(results)
